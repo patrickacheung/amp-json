@@ -67,7 +67,7 @@ public class AmpJsonReader {
                     case NUMBER:
                         String numString = jsonReader.nextString();
                         if (!NUMBER_KEYS.contains(prevKey)  ||
-                                (NUMBER_KEYS.contains(prevKey) && !isValidWholeNumber(numString)) ||
+                                (NUMBER_KEYS.contains(prevKey) && !isValidPositiveLong(numString)) ||
                                 (DISPOSITION_KEY.contains(prevKey) && !isValidDisposition(numString))) {
                             return false;
                         }
@@ -109,7 +109,11 @@ public class AmpJsonReader {
         if (!isValidFileName(filename)) {
             throw new IllegalArgumentException("invalid filename");
         }
+
         int dotIdx = filename.lastIndexOf(".");
+        if (dotIdx == -1 || (dotIdx == filename.length() - 1)) {
+            return filename;
+        }
         return filename.substring(0, dotIdx);
     }
 
@@ -126,7 +130,11 @@ public class AmpJsonReader {
         if (!isValidFileName(filename)) {
             throw new IllegalArgumentException("invalid filename");
         }
+
         int dotIdx = filename.lastIndexOf(".");
+        if (dotIdx == -1 || (dotIdx == filename.length() - 1)) {
+            return "";
+        }
         return filename.substring(dotIdx + 1);
     }
 
@@ -142,12 +150,16 @@ public class AmpJsonReader {
     }
 
     @VisibleForTesting
-    protected boolean isValidWholeNumber(String num) {
-        for (char c : num.toCharArray()) {
-            if ('.' == c) {
+    protected boolean isValidPositiveLong(String num) {
+        try {
+            long l = Long.parseLong(num);
+            if (l < 0) {
                 return false;
             }
+        } catch (NumberFormatException e) {
+            return false;
         }
+
         return true;
     }
 
@@ -169,25 +181,16 @@ public class AmpJsonReader {
     /**
      * <pre>
      *     Determines if the filename provided is valid.
-     *     Assumes a valid filename is name.ext (name dot extension).
-     *     All other forms are invalid.
      * </pre>
      * @param filename the filename
-     * @return true if the filename is valid, or false if invalid (as per description).
+     * @return true if the filename is valid, or false if invalid.
      */
     @VisibleForTesting
     protected boolean isValidFileName(String filename) {
-        if (filename.isBlank() || filename.isEmpty()) {
+        if (filename.isBlank() || filename.isEmpty() || (".".equals(filename) || "..".equals(filename))) {
             return false;
         }
-
-        int idx = filename.lastIndexOf('.');
-        if (idx == -1) {
-            return false;
-        }
-
-        String[] parts = filename.split("\\.");
-        return parts.length >= 2 && validFileNameParts(parts[0], true) && validFileNameParts(parts[1], false);
+        return true;
     }
 
     private boolean validFileNameParts(String part, boolean head) {

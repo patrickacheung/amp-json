@@ -29,8 +29,8 @@ public class AmpJsonReaderTest {
 
     @BeforeEach
     void setupValidFileMetaData() {
-        final long expectedTimestamp = random.nextLong();
-        final long expectedProcessingTime = random.nextInt();
+        final long expectedTimestamp = generateRandomPositiveLong();
+        final long expectedProcessingTime = generateRandomPositiveLong();
         final UUID expectedSessionID = UUID.randomUUID();
         final UUID expectedUserID = UUID.randomUUID();
         final UUID expectedBusinessID = UUID.randomUUID();
@@ -118,7 +118,7 @@ public class AmpJsonReaderTest {
     @Test
     void invalidLogLineWithInvalidFileNameValue() {
         metaDataJsonObject.remove("nm");
-        metaDataJsonObject.addProperty("nm", "invalid_filename");
+        metaDataJsonObject.addProperty("nm", "..");
         assertFalse(fixture.isValidFileMetaData(metaDataJsonObject.toString()));
 
         metaDataJsonObject.remove("nm");
@@ -126,11 +126,7 @@ public class AmpJsonReaderTest {
         assertFalse(fixture.isValidFileMetaData(metaDataJsonObject.toString()));
 
         metaDataJsonObject.remove("nm");
-        metaDataJsonObject.addProperty("nm", "invalid.");
-        assertFalse(fixture.isValidFileMetaData(metaDataJsonObject.toString()));
-
-        metaDataJsonObject.remove("nm");
-        metaDataJsonObject.addProperty("nm", "..");
+        metaDataJsonObject.addProperty("nm", ".");
         assertFalse(fixture.isValidFileMetaData(metaDataJsonObject.toString()));
     }
 
@@ -172,19 +168,21 @@ public class AmpJsonReaderTest {
     }
 
     @Test
-    void validWholeNumberTest() {
-        assertTrue(fixture.isValidWholeNumber("-100"));
-        assertTrue(fixture.isValidWholeNumber("100"));
-        assertTrue(fixture.isValidWholeNumber("0"));
-        assertTrue(fixture.isValidWholeNumber("999999999"));
+    void validValidPositiveSignedLong() {
+        assertTrue(fixture.isValidPositiveLong("100"));
+        assertTrue(fixture.isValidPositiveLong("0"));
+        assertTrue(fixture.isValidPositiveLong("999999999"));
+        assertTrue(fixture.isValidPositiveLong(String.valueOf(Long.MAX_VALUE)));
     }
 
     @Test
-    void invalidWholeNumberTest() {
-        assertFalse(fixture.isValidWholeNumber("0.0"));
-        assertFalse(fixture.isValidWholeNumber("-100.0"));
-        assertFalse(fixture.isValidWholeNumber("100.0"));
-        assertFalse(fixture.isValidWholeNumber("100.00001"));
+    void isInvalidPositiveSignedLong() {
+        assertFalse(fixture.isValidPositiveLong("0.0"));
+        assertFalse(fixture.isValidPositiveLong("-100.0"));
+        assertFalse(fixture.isValidPositiveLong("100.0"));
+        assertFalse(fixture.isValidPositiveLong("100.00001"));
+        assertFalse(fixture.isValidPositiveLong("1e5"));
+        assertFalse(fixture.isValidPositiveLong("-100"));
     }
 
     @Test
@@ -192,18 +190,53 @@ public class AmpJsonReaderTest {
         assertTrue(fixture.isValidFileName("valid.filename"));
         assertEquals("valid", fixture.getFilenameWithoutExt("valid.filename"));
         assertEquals("filename", fixture.getFileExt("valid.filename"));
+
+        assertTrue(fixture.isValidFileName("i.am.a.valid.file.pdf"));
+        assertEquals("i.am.a.valid.file", fixture.getFilenameWithoutExt("i.am.a.valid.file.pdf"));
+        assertEquals("pdf", fixture.getFileExt("i.am.a.valid.file.pdf"));
+
+        assertTrue(fixture.isValidFileName("asdf"));
+        assertEquals("asdf", fixture.getFilenameWithoutExt("asdf"));
+        assertEquals("", fixture.getFileExt("asdf"));
+
+        assertTrue(fixture.isValidFileName("asdf "));
+        assertEquals("asdf ", fixture.getFilenameWithoutExt("asdf "));
+        assertEquals("", fixture.getFileExt("asdf "));
+
+        assertTrue(fixture.isValidFileName("asdf."));
+        assertEquals("asdf", fixture.getFilenameWithoutExt("asdf"));
+        assertEquals("", fixture.getFileExt("asdf."));
+
+        assertTrue(fixture.isValidFileName("asdf. "));
+        assertEquals("asdf", fixture.getFilenameWithoutExt("asdf. "));
+        assertEquals(" ", fixture.getFileExt("asdf. "));
+
+        assertTrue(fixture.isValidFileName("asdf. asdf"));
+        assertEquals("asdf", fixture.getFilenameWithoutExt("asdf. asdf"));
+        assertEquals(" asdf", fixture.getFileExt("asdf. asdf"));
+
+        assertTrue(fixture.isValidFileName(".asdf"));
+        assertEquals("", fixture.getFilenameWithoutExt(".asdf"));
+        assertEquals("asdf", fixture.getFileExt(".asdf"));
+
+        assertTrue(fixture.isValidFileName(" .ext"));
+        assertEquals(" ", fixture.getFilenameWithoutExt(" .ext"));
+        assertEquals("ext", fixture.getFileExt(" .ext"));
+
+        assertTrue(fixture.isValidFileName(". "));
+        assertEquals("", fixture.getFilenameWithoutExt(". "));
+        assertEquals(" ", fixture.getFileExt(". "));
+
+        assertTrue(fixture.isValidFileName(" . "));
+        assertEquals(" ", fixture.getFilenameWithoutExt(" . "));
+        assertEquals(" ", fixture.getFileExt(" . "));
     }
 
     @Test
     void invalidFileNameTest() {
         assertFalse(fixture.isValidFileName(""));
-        assertFalse(fixture.isValidFileName("invalid"));
-        assertFalse(fixture.isValidFileName("invalid."));
-        assertFalse(fixture.isValidFileName("invalid. "));
         assertFalse(fixture.isValidFileName("."));
-        assertFalse(fixture.isValidFileName(". "));
-        assertFalse(fixture.isValidFileName("invalid. filename"));
-        assertFalse(fixture.isValidFileName(".filename"));
+        assertFalse(fixture.isValidFileName(".."));
     }
 
     @Test
@@ -251,5 +284,9 @@ public class AmpJsonReaderTest {
 
     private static int getRandomNumberInDispositionRange() {
         return random.ints(1, (FileMetaData.Disposition.values().length + 1)).findFirst().getAsInt();
+    }
+
+    private static long generateRandomPositiveLong() {
+        return random.longs(0, Long.MAX_VALUE).findFirst().getAsLong();
     }
 }
