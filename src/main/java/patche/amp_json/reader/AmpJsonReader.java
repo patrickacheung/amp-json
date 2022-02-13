@@ -192,19 +192,4 @@ public class AmpJsonReader {
         }
         return true;
     }
-
-    private boolean validFileNameParts(String part, boolean head) {
-        if (part.isBlank() || part.isEmpty()) {
-            return false;
-        }
-
-        char c;
-        if (head) {
-            c = part.charAt(part.length() - 1);
-        } else {
-            c = part.charAt(0);
-        }
-
-        return c != ' ';
-    }
 }
