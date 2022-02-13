@@ -206,7 +206,7 @@ public class JsonProcessingAppTest {
         fixture = spy(fixture);
 
         File resourceDirectory = new File("src/test/resources");
-        fixture.processLogFile(resourceDirectory + "/test.log");
+        fixture.processLogFile(resourceDirectory + "/test.example");
 
         verify(fixture).processLogFile(any(BufferedReader.class) , mapCaptor.capture());
 
